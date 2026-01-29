@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+
+<script>
+const q=new URLSearchParams(location.search);
+const ROOM=q.get("room");
+
+const c=document.getElementById("c");
+const x=c.getContext("2d");
+c.width=innerWidth;c.height=innerHeight;
+
+const v=document.createElement("video");
+v.autoplay=true;v.playsInline=true;
+
+const peer=new SimplePeer({
+  initiator:true,
+  trickle:true,
+  config:{
+    iceServers:[
+      {urls:"turn:openrelay.metered.ca:80",username:"openrelayproject",credential:"openrelayproject"},
+      {urls:"turn:openrelay.metered.ca:443",username:"openrelayproject",credential:"openrelayproject"}
+    ]
+  }
+});
+
+peer.on("stream",s=>v.srcObject=s);
+
+peer.on("signal",d=>{
+  localStorage.setItem("sig-"+ROOM,JSON.stringify(d));
+});
+
+setInterval(()=>{
+  const r=localStorage.getItem("host-"+ROOM);
+  if(r) peer.signal(JSON.parse(r));
+},500);
+
+(function loop(){
+ if(v.readyState>=2) x.drawImage(v,0,0,c.width,c.height);
+ requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
